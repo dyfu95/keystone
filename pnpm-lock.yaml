@@ -596,8 +596,8 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0
       prism-react-renderer:
-        specifier: ^1.2.1
-        version: 1.2.1(react@18.2.0)
+        specifier: ^2.0.0
+        version: 2.0.6(react@18.2.0)
       react:
         specifier: ^18.2.0
         version: 18.2.0
@@ -11007,6 +11007,10 @@ packages:
     resolution: {integrity: sha512-kVww6xZrW/db5BR9OqiT71J9huRdQ+z/r+LbDuT7/EK50mCmj5FoaIARnVv0rvjUS/YpDox0cDU9lpQT011VBA==}
     dev: true
 
+  /@types/prismjs@1.26.0:
+    resolution: {integrity: sha512-ZTaqn/qSqUuAq1YwvOFQfVW1AR/oQJlLSZVustdjwI+GZ8kr0MSHBj0tsXPW1EqHubx50gtBEjbPGsdZwQwCjQ==}
+    dev: false
+
   /@types/prompts@2.0.14:
     resolution: {integrity: sha512-HZBd99fKxRWpYCErtm2/yxUZv6/PBI9J7N4TNFffl5JbrYMHBwF25DjQGTW3b3jmXq+9P6/8fCIb2ee57BFfYA==}
     dependencies:
@@ -12067,17 +12071,17 @@ packages:
       - supports-color
     dev: true
 
-  /babel-jest@29.6.4(@babel/core@7.22.11):
+  /babel-jest@29.6.4(@babel/core@7.21.0):
     resolution: {integrity: sha512-meLj23UlSLddj6PC+YTOFRgDAtjnZom8w/ACsrx0gtPtv5cJZk0A5Unk5bV4wixD7XaPCN1fQvpww8czkZURmw==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     peerDependencies:
       '@babel/core': ^7.8.0
     dependencies:
-      '@babel/core': 7.22.11
+      '@babel/core': 7.21.0
       '@jest/transform': 29.6.4
       '@types/babel__core': 7.20.1
       babel-plugin-istanbul: 6.1.1
-      babel-preset-jest: 29.6.3(@babel/core@7.22.11)
+      babel-preset-jest: 29.6.3(@babel/core@7.21.0)
       chalk: 4.1.2
       graceful-fs: 4.2.11
       slash: 3.0.0
@@ -12303,17 +12307,6 @@ packages:
       '@babel/core': 7.21.0
       babel-plugin-jest-hoist: 29.6.3
       babel-preset-current-node-syntax: 1.0.1(@babel/core@7.21.0)
-    dev: true
-
-  /babel-preset-jest@29.6.3(@babel/core@7.22.11):
-    resolution: {integrity: sha512-0B3bhxR6snWXJZtR/RliHTDPRgn1sNHOR0yVtq/IiQFyuOVjFS+wuio/R4gSNkyYmKmJB4wGZv2NZanmKmTnNA==}
-    engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
-    peerDependencies:
-      '@babel/core': ^7.0.0
-    dependencies:
-      '@babel/core': 7.22.11
-      babel-plugin-jest-hoist: 29.6.3
-      babel-preset-current-node-syntax: 1.0.1(@babel/core@7.22.11)
     dev: true
 
   /bail@2.0.2:
@@ -13045,6 +13038,11 @@ packages:
       core-js: 3.6.5
       lodash: 4.17.21
       q: 1.5.1
+    dev: false
+
+  /clsx@1.2.1:
+    resolution: {integrity: sha512-EcR6r5a8bj6pu3ycsa/E/cKVGuTgZJZdsyUYHOksG/UHIiKfjxzRxYJpyVBwYaQeOvghal9fcc4PidlgzugAQg==}
+    engines: {node: '>=6'}
     dev: false
 
   /cluster-key-slot@1.1.0:
@@ -17175,11 +17173,11 @@ packages:
       ts-node:
         optional: true
     dependencies:
-      '@babel/core': 7.22.11
+      '@babel/core': 7.21.0
       '@jest/test-sequencer': 29.6.4
       '@jest/types': 29.6.3
       '@types/node': 18.11.14
-      babel-jest: 29.6.4(@babel/core@7.22.11)
+      babel-jest: 29.6.4(@babel/core@7.21.0)
       chalk: 4.1.2
       ci-info: 3.8.0
       deepmerge: 4.3.1
@@ -20533,11 +20531,13 @@ packages:
       parse-ms: 2.1.0
     dev: true
 
-  /prism-react-renderer@1.2.1(react@18.2.0):
-    resolution: {integrity: sha512-w23ch4f75V1Tnz8DajsYKvY5lF7H1+WvzvLUcF0paFxkTHSp42RS0H5CttdN2Q8RR3DRGZ9v5xD/h3n8C8kGmg==}
+  /prism-react-renderer@2.0.6(react@18.2.0):
+    resolution: {integrity: sha512-ERzmAI5UvrcTw5ivfEG20/dYClAsC84eSED5p9X3oKpm0xPV4A5clFK1mp7lPIdKmbLnQYsPTGiOI7WS6gWigw==}
     peerDependencies:
-      react: '>=0.14.9'
+      react: '>=16.0.0'
     dependencies:
+      '@types/prismjs': 1.26.0
+      clsx: 1.2.1
       react: 18.2.0
     dev: false
 
