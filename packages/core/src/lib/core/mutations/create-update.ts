@@ -28,8 +28,7 @@ import {
   resolveRelateToOneForUpdateInput,
 } from './nested-mutation-one-input-resolvers';
 import { applyAccessControlForCreate, getAccessControlledItemForUpdate } from './access-control';
-import { runSideEffectOnlyHook } from './hooks';
-import { validateUpdateCreate } from './validation';
+import { validateList, validateFields } from './validation';
 
 async function createSingle(
   { data: rawData }: { data: Record<string, any> },
@@ -191,11 +190,19 @@ async function getResolvedData(
     context: KeystoneContext;
     listKey: string;
     inputData: Record<string, any>;
-  } & ({ operation: 'create'; item: undefined } | { operation: 'update'; item: BaseItem }),
+    item: undefined | BaseItem;
+  },
   nestedMutationState: NestedMutationState
 ) {
-  const { context, operation } = hookArgs;
-  let resolvedData = hookArgs.inputData;
+  const {
+    context,
+    listKey,
+    inputData,
+    item
+  } = hookArgs;
+  const operation = item === undefined ? 'create' as const : 'update' as const;
+
+  let resolvedData = inputData;
 
   // apply non-relationship field type input resolvers
   const resolverErrors: { error: Error; tag: string }[] = [];
@@ -300,10 +307,28 @@ async function getResolvedData(
     await Promise.all(
       Object.entries(list.fields).map(async ([fieldKey, field]) => {
         try {
+          if (item === undefined) {
+            return [
+              fieldKey,
+              await field.hooks.resolveInput({
+                context,
+                listKey,
+                operation: 'create',
+                inputData,
+                resolvedData,
+                fieldKey,
+              }),
+            ];
+          }
+
           return [
             fieldKey,
             await field.hooks.resolveInput({
-              ...hookArgs,
+              context,
+              listKey,
+              operation: 'update',
+              inputData,
+              item,
               resolvedData,
               fieldKey,
             }),
@@ -323,16 +348,28 @@ async function getResolvedData(
 
   // list hooks
   try {
-    if (operation === 'create') {
-      resolvedData = await list.hooks.resolveInput.create({ ...hookArgs, resolvedData });
-    } else if (operation === 'update') {
-      resolvedData = await list.hooks.resolveInput.update({ ...hookArgs, resolvedData });
+    if (item === undefined) {
+      return await list.hooks.resolveInput.create({
+        context,
+        listKey,
+        operation: 'create',
+        inputData,
+        item: undefined,
+        resolvedData
+      });
     }
+
+    return await list.hooks.resolveInput.update({
+      context,
+      listKey,
+      operation: 'update',
+      inputData,
+      item,
+      resolvedData
+    });
   } catch (error: any) {
     throw extensionError('resolveInput', [{ error, tag: `${list.listKey}.hooks.resolveInput` }]);
   }
-
-  return resolvedData;
 }
 
 async function resolveInputForCreateOrUpdate(
@@ -342,44 +379,65 @@ async function resolveInputForCreateOrUpdate(
   item: BaseItem | undefined
 ) {
   const nestedMutationState = new NestedMutationState(context);
-  const baseHookArgs = {
-    context,
-    listKey: list.listKey,
-    inputData,
-    resolvedData: {},
-  };
-  const hookArgs =
-    item === undefined
-      ? { ...baseHookArgs, operation: 'create' as const, item }
-      : { ...baseHookArgs, operation: 'update' as const, item };
+  const { listKey } = list;
+  const operation = item === undefined ? 'create' as const : 'update' as const;
 
-  // Take the original input and resolve all the fields down to what
-  // will be saved into the database.
+  const hookArgs = {
+    context,
+    listKey,
+    operation,
+    item,
+    inputData,
+    resolvedData: null as null | Record<string, any>
+  } as any;
   hookArgs.resolvedData = await getResolvedData(list, hookArgs, nestedMutationState);
 
-  // Apply all validation checks
-  await validateUpdateCreate({ list, hookArgs });
+  // validate field hooks
+  await validateFields(list, hookArgs);
 
-  // Run beforeOperation hooks
-  await runSideEffectOnlyHook(list, 'beforeOperation', hookArgs);
+  // validate list hooks // TODO: why isn't this first
+  await validateList(list, hookArgs);
+
+  // beforeOperation list hook
+  if (hookArgs.operation === 'create') {
+    await list.hooks.beforeOperation.create(hookArgs);
+  } else {
+    await list.hooks.beforeOperation.update(hookArgs);
+  }
+
+  // beforeOperation field hooks
+  for (const fieldKey in list.fields) {
+    await list.fields[fieldKey].hooks.beforeOperation?.({ ...hookArgs, fieldKey });
+  }
 
   // Return the full resolved input (ready for prisma level operation),
   // and the afterOperation hook to be applied
   return {
-    data: transformForPrismaClient(list.fields, hookArgs.resolvedData, context),
+    data: transformForPrismaClient(list.fields, resolvedData, context),
     afterOperation: async (updatedItem: BaseItem) => {
       await nestedMutationState.afterOperation();
-      await runSideEffectOnlyHook(
-        list,
-        'afterOperation',
-        // at runtime this conditional is pointless
-        // but TypeScript needs it because in each case, it will narrow
-        // `hookArgs` based on the `operation` which will make `hookArgs.item`
-        // be the right type for `originalItem` for the operation
-        hookArgs.operation === 'create'
-          ? { ...hookArgs, item: updatedItem, originalItem: undefined }
-          : { ...hookArgs, item: updatedItem, originalItem: hookArgs.item }
-      );
+
+      if (hookArgs.operation === 'create') {
+        await list.hooks.afterOperation.create(hookArgs);
+          context,
+          listKey,
+          operation: 'create',
+          originalItem: undefined,
+          item: updatedItem,
+          inputData,
+          resolvedData
+        });
+      } else {
+        await list.hooks.afterOperation.update({
+          context,
+          listKey,
+          operation: 'update',
+          originalItem: item,
+          item: updatedItem,
+          inputData,
+          resolvedData
+        });
+      }
     },
   };
 }
